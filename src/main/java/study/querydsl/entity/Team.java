@@ -15,7 +15,7 @@ import java.util.List;
 public class Team {
 
     @Id @GeneratedValue
-    @Column(name = "tema_id")
+    @Column(name = "team_id")
     private Long id;
 
     private String name;

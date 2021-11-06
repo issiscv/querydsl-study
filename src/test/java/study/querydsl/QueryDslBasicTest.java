@@ -16,6 +16,9 @@ import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
@@ -223,5 +226,107 @@ public class QueryDslBasicTest {
         assertThat(teamB.get(team.name)).isEqualTo("teamB");
         assertThat(teamB.get(member.age.avg())).isEqualTo(35);
 
+    }
+
+    @Test
+    void join() {
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .join(member.team, team)
+                .where(member.team.name.eq("teamA"))
+                .fetch();
+
+        assertThat(result)
+                .extracting("username")
+                .containsExactly("member1", "member2");
+    }
+
+    @Test
+    void theta_join() {
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        
+        //세타조인 -> 막 조인
+        List<Tuple> fetch = queryFactory
+                .select(member, team)
+                .from(member, team)//카티젼 프로덕트
+                .where(member.username.eq(team.name))//where 절로 필터링
+                .fetch();
+
+        for (Tuple tuple : fetch) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @Test
+    void join_on_filtering() {
+        //left outer join
+        List<Tuple> result  = queryFactory
+                .select(member, team)
+                .from(member)
+                //on 절을 활용하여 조인 대상을 필터링
+                .leftJoin(member.team, team).on(team.name.eq("teamA"))//pk 로 매칭하여 join and team 이름이 teamA
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    /**
+     * 연관관계가 없는 엔티티 외부조인
+     * 회원 이름이 팀 이름과 같은 대상 외부조인
+     */
+    @Test
+    void join_on_no_relation() {
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+
+        //세타조인 -> 막 조인
+        //join(team) 할 시에는 pk로 필터링 하지 않고, 뒤에 on 절로 필터링 한다.
+        //join(member.team, team) -> 이것이 pk로 필털링
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .join(team).on(member.username.eq(team.name))
+                .fetch();
+
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @PersistenceUnit
+    EntityManagerFactory emf;
+
+    @Test
+    void fetchJoinNo() {
+        em.flush();
+        em.clear();
+
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+        assertThat(loaded).as("페치 조인 미적용").isFalse();
+    }
+
+    @Test
+    void fetchJoin() {
+        em.flush();
+        em.clear();
+        //sql 에서 팀과 멤버 필드 다 조회
+        //SELECT M.*, T.* FROM MEMBER M
+        //INNER JOIN TEAM T ON M.TEAM_ID=T.ID WHERE M.username="member1"
+        Member findMember = queryFactory
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin()
+                .where(member.username.eq("member1"))
+                .fetchOne();
+
+        boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+        assertThat(loaded).as("페치 조인 미적용").isTrue();
     }
 }
