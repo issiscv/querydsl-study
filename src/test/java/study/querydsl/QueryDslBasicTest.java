@@ -1,10 +1,13 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
@@ -631,6 +634,127 @@ public class QueryDslBasicTest {
 
         for (MemberDto memberDto : fetch) {
             System.out.println("memberDto = " + memberDto);
+        }
+    }
+    //동적 쿼리 booleanBuilder
+    @Test
+    void dynamicQuery_BooleanBuilder() {
+        String username = "rlatkddns";
+        Integer ageParam = 10;
+
+        List<Member> result = searchMember1(username, ageParam);
+        assertThat(result.size()).isEqualTo(1);
+    }
+
+    private List<Member> searchMember1(String usernameCond, Integer ageParamCond) {
+        //null 이냐 아니냐에 따른 where 문
+
+        BooleanBuilder builder = new BooleanBuilder();
+
+        if (usernameCond != null) {
+            builder.and(member.username.eq(usernameCond));
+        }
+
+        if (ageParamCond != null) {
+            builder.and(member.age.eq(ageParamCond));
+        }
+
+        //파라미터가 null이 아니면 동적으로 쿼리 생성
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(builder)
+                .fetch();
+
+        return result;
+    }
+    
+    //where 다중 파라미터 사용
+    @Test
+    void dynamicQuery_whereParam() {
+        String username = null;
+        Integer age = 10;
+
+        List<Member> members = searchMember2(username, age);
+
+        assertThat(members.size()).isEqualTo(1);
+    }
+
+    private List<Member> searchMember2(String usernameCond, Integer ageCond) {
+        return queryFactory
+                .selectFrom(member)
+                .where(usernameEq(usernameCond), ageEq(ageCond))
+                .fetch();
+    }
+
+    private BooleanExpression usernameEq(String usernameCond) {
+        return usernameCond != null ? member.username.eq(usernameCond) : null;
+    }
+
+    private BooleanExpression ageEq(Integer ageCond) {
+        return ageCond != null ? member.age.eq(ageCond) : null;
+    }
+
+    private BooleanExpression allEq(String usernameCond, Integer ageCond) {
+        return usernameEq(usernameCond).and(ageEq(ageCond));
+    }
+    //벌크 연산
+    @Test
+    void bulkUpdate() {
+        //영향을 받은 row
+        //벌크 연산은 영속성 컨텍스트를 거치지 않는다.
+        //영속성 컨텍스트 초기화를 하자
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        System.out.println("count = " + count);
+        
+        //영속성 컨텍스트 초기화
+        em.flush();
+        em.clear();
+        
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1);
+        }
+    }
+    
+//    JPAExpressions -> 서브 쿼리 만들 때
+//    Expressions -> 상수 concat
+//    ExpressionUtils -> 서브쿼리에 별칭을 줄 때
+    @Test
+    void bulkAdd() {
+        long execute = queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1))
+                .execute();
+    }
+
+    @Test
+    void bulkDelete() {
+        long execute = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
+
+    @Test
+    void sqlFunction() {
+
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+//                .where(member.username.eq(Expressions.stringTemplate("function('lower', {0})", member.username)))
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+
+        for (String s : result) {
+            System.out.println("s = " + s);
         }
     }
 }
