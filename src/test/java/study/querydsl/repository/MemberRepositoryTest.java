@@ -1,6 +1,5 @@
 package study.querydsl.repository;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,46 +10,29 @@ import study.querydsl.entity.Member;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
-
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Transactional
-class MemberJpaRepositoryTest {
+public class MemberRepositoryTest {
 
     @Autowired
-    private MemberJpaRepository memberJpaRepository;
+    private MemberRepository memberRepository;
     @Autowired
     private EntityManager em;
 
     @Test
     public void basic() {
         Member member = new Member("member1", 10);
-        memberJpaRepository.save(member);
+        memberRepository.save(member);
 
-        Member findMember = memberJpaRepository.findById(member.getId()).orElse(null);
+        Member findMember = memberRepository.findById(member.getId()).orElse(null);
         assertThat(findMember).isEqualTo(member);
 
-        List<Member> result = memberJpaRepository.findByUsername("member1");
+        List<Member> result = memberRepository.findByUsername("member1");
 
-        assertThat(result).containsExactly(member);
-    }
-
-    @Test
-    public void basic_QueryDsl() {
-        Member member = new Member("member1", 10);
-        memberJpaRepository.save(member);
-
-        Member findMember = memberJpaRepository.findById(member.getId()).orElse(null);
-        assertThat(findMember).isEqualTo(member);
-
-        List<Member> all_queryDsl = memberJpaRepository.findAll_QueryDsl();
-        assertThat(all_queryDsl).containsExactly(member);
-
-        List<Member> result = memberJpaRepository.findByUsername_QueryDsl("member1");
         assertThat(result).containsExactly(member);
     }
 
@@ -77,7 +59,7 @@ class MemberJpaRepositoryTest {
         memberSearchCondition.setAgeGoe(35);
         memberSearchCondition.setAgeLoe(45);
 
-        List<MemberTeamDto> memberTeamDtos = memberJpaRepository
+        List<MemberTeamDto> memberTeamDtos = memberRepository
                 .search(memberSearchCondition);
 
         assertThat(memberTeamDtos).extracting("username").containsExactly("member4");

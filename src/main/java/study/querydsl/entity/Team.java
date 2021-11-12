@@ -11,7 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Builder
-@ToString(of = {"id", "name"})
 public class Team {
 
     @Id @GeneratedValue

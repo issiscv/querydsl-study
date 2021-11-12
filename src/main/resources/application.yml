@@ -1,7 +1,9 @@
 
 spring:
+  profiles:
+    active: local
   datasource:
-    url: jdbc:mysql://localhost:3306/board?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/root?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
     password: 369369rt
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -13,7 +15,7 @@ spring:
         #show_sql: true -> 프린트
         ##use_sql_comments : true -> jpql
         format_sql: true
-        ##default_batch_fetch_size : 100
+        default_batch_fetch_size : 100
 
 logging.level:
   org.hibernate.SQL: debug
