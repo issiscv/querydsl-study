@@ -1,4 +1,4 @@
-package study.querydsl;
+package study.querydsl.repositoryTest;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;

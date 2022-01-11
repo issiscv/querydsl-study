@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
+@Rollback(value = false)
 class MemberJpaRepositoryTest {
 
     @Autowired
@@ -104,16 +106,14 @@ class MemberJpaRepositoryTest {
         em.persist(member3);
         em.persist(member4);
 
-        MemberSearchCondition memberSearchCondition = new MemberSearchCondition();
-        memberSearchCondition.setAgeGoe(35);
-        memberSearchCondition.setAgeLoe(45);
+        em.flush();
+        em.clear();
 
-        PageRequest pageRequest = PageRequest.of(0, 3);
+        Team team = em.find(Team.class, teamA.getId());
 
-        List<MemberTeamDto> memberTeamDtos = memberJpaRepository
-                .search(memberSearchCondition);
-
-        assertThat(memberTeamDtos).extracting("username").containsExactly("member4");
+        System.out.println("//11//");
+        System.out.println("team.getMembers().size() = " + team.getMembers().size());
+        System.out.println("//22//");
 
     }
 
