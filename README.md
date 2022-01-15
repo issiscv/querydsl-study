@@ -433,3 +433,68 @@ BooleanExpression: Where 다중 파라미터 시 메서드의 반환 값<br>
     .fetchFirst();
 
 > SQL function 은 JPA 와 같이 Dialect 에 등록된 내용만 호출할 수 있다.
+
+# 실무 활용
+## Querydsl 리포지토리
+### 사용자 정의 리포지토리 구성
+![repository](https://user-images.githubusercontent.com/66157892/149620800-8be33b57-c4a7-47f6-b451-2f54600896c1.PNG)
+
+###사용자 정의 리포지토리 사용법
+1. 사용자 정의 인터페이스 작성
+2. 사용자 정의 인터페이스 구현
+3. 스프링 데이터 리포지토리에 사용자 정의 인터페이스 상속
+
+## 스프링 데이터 페이징과 Querydsl 페이징 연동
+
+
+    @Override
+    public Page<MemberTeamDto> searchPageSimple(MemberSearchCondition condition,
+    Pageable pageable) {
+
+        QueryResults<MemberTeamDto> results = queryFactory
+        .select(new QMemberTeamDto(
+            member.id,
+            member.username,
+            member.age,
+            team.id,
+            team.name))
+        .from(member)
+        .leftJoin(member.team, team)
+        .where(usernameEq(condition.getUsername()),
+            teamNameEq(condition.getTeamName()),
+            ageGoe(condition.getAgeGoe()),
+            ageLoe(condition.getAgeLoe()))
+        .offset(pageable.getOffset())
+        .limit(pageable.getPageSize())
+        .fetchResults();
+
+        List<MemberTeamDto> content = results.getResults();
+        long total = results.getTotal();
+
+        return new PageImpl<>(content, pageable, total);
+    }
+
+- fetchResults() 를 사용할 경우 카운트쿼리 까지 나간다.
+- Pageable 객체를 파라미터로 받은 후 where 절 이후
+  offset(pageable.getOffset()), limit(pageable.getPageSize()) 메서드를 사용해 페이징 처리
+  
+
+## count 쿼리 최적화
+
+    JPAQuery<Member> countQuery = queryFactory
+    .select(member)
+    .from(member)
+    .leftJoin(member.team, team)
+    .where(usernameEq(condition.getUsername()),
+        teamNameEq(condition.getTeamName()),
+       ageGoe(condition.getAgeGoe()),
+        ageLoe(condition.getAgeLoe()));
+   
+    return PageableExecutionUtils.getPage(content, pageable,
+    countQuery::fetchCount);
+
+- count 쿼리가 생략 가능한 경우 생략해서 처리
+- 페이지 시작이면서 컨텐츠 사이즈가 페이지 사이즈보다 작을 때
+- 마지막 페이지 일 때 (offset + 컨텐츠 사이즈를 더해서 전체 사이즈 구함)
+- PageableExecutionUtils.getPage(content, pageable,
+  countQuery::fetchCount) 를 사용하여 카운트 쿼리를 날릴지 말지 계산.

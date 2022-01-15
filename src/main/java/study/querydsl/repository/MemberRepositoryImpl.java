@@ -73,7 +73,7 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
         JPAQuery<Member> countQuery = queryFactory
                 .select(member)
                 .from(member)
-                .leftJoin(member.team, team)
+                .join(member.team, team)
                 .where(usernameEq(condition.getUsername()), teamNameEq(condition.getTeamName()), ageGoe(condition.getAgeGoe()), ageLoe(condition.getAgeLoe()));
 
 
